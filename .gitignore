@@ -1,0 +1,175 @@
+# ============================================================================
+# GITIGNORE - EU ENERGY TRANSITION ANALYSIS PROJECT
+# ============================================================================
+
+# === PYTHON ===
+# Environnements virtuels
+venv/
+env/
+ENV/
+.venv/
+.virtualenv/
+
+# Fichiers compilés Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# === GCP / BIGQUERY CREDENTIALS (CRITIQUE!) ===
+# Service account keys
+*service-account*.json
+*-credentials.json
+*-key.json
+gcp-key*.json
+bigquery-*.json
+credentials.json
+service-account.json
+
+# General secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets.yaml
+secrets.yml
+.secrets/
+
+# === DBT ===
+# Fichiers générés par dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+dbt/.user.yml
+
+# Profiles avec credentials (on garde seulement l'exemple)
+dbt/profiles.yml
+!dbt/profiles.yml.example
+
+# === AIRBYTE ===
+# Configuration et données Airbyte
+airbyte/.env
+airbyte/config/
+airbyte/db/
+airbyte/.airbyte/
+airbyte/data/
+airbyte/logs/
+
+# === METABASE ===
+# Base de données locale Metabase
+metabase.db/
+metabase.db.mv.db
+metabase.db.trace.db
+metabase.db.h2.db
+
+# === DOCKER ===
+# Volumes Docker locaux
+docker/volumes/
+.docker/
+
+# === DONNÉES ===
+# Fichiers de données volumineux
+data/
+raw_data/
+processed_data/
+*.csv
+*.parquet
+*.feather
+*.xlsx
+
+# Exception : garder les petits fichiers d'exemple
+!data/samples/
+!**/sample_*.csv
+
+# === API KEYS ===
+.api_keys
+api_credentials.json
+entsoe_api_key.txt
+*.api_key
+
+# === IDE / ÉDITEURS ===
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# === SYSTÈMES D'EXPLOITATION ===
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# === LOGS & TEMPORAIRES ===
+*.log
+logs/
+*.tmp
+*.temp
+~*
+.cache/
+
+# === ARCHIVES ===
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# === POWER BI (si utilisé) ===
+*.pbix.bak
+~$*.pbix
+
+# === TESTS & COVERAGE ===
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# === DOCUMENTATION GÉNÉRÉE ===
+site/
+docs/_build/
