@@ -1,0 +1,26 @@
+# ENTSO-E Configuration
+# Source: https://transparencyplatform.zendesk.com/hc/en-us/articles/15885757676308
+# Last verified: 2026-01-16
+
+countries:
+  FR: 10YFR-RTE------C  # France (RTE)
+  DE: 10Y1001A1001A83F  # Germany
+  ES: 10YES-REE------0  # Spain
+  NL: 10YNL----------L  # Netherlands
+  IT: 10YIT-GRTN-----B  # Italy (Terna)
+  PT: 10YPT-REN------W  # Portugal
+  BE: 10YBE----------2  # Belgium
+  UK: 10Y1001A1001A92E  # United Kingdom
+
+documents:
+  - type: A75
+    process: A16
+    description: "Actual generation per type"
+  
+  - type: A73
+    process: A16
+    description: "Actual generation output per unit"
+  
+  - type: A68
+    process: A33
+    description: "Installed generation capacity per type"

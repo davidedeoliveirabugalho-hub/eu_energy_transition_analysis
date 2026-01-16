@@ -27,6 +27,10 @@ This project aims to answer key questions about Europe's energy transition:
 
 Coming soon...
 
+## 🏗️ Architecture & Decisions
+
+For detailed technical decisions and alternatives explored, see [docs/technical_decisions.md](docs/technical_decisions.md)
+
 ## 🚀 Getting Started
 
 Coming soon...
@@ -41,6 +45,8 @@ Coming soon...
 - **[Open Power System Data](https://open-power-system-data.org/)** - Historical energy production and consumption datasets
 - **[EEX/EPEX Spot](https://www.epexspot.com/)** - European energy market prices
 - **[ERA5 (Copernicus)](https://cds.climate.copernicus.eu/)** - Climate and weather data for renewable energy correlation analysis
+
+
 
 ## 📝 Project Status
 
