@@ -46,6 +46,17 @@ Coming soon...
 - **[EEX/EPEX Spot](https://www.epexspot.com/)** - European energy market prices
 - **[ERA5 (Copernicus)](https://cds.climate.copernicus.eu/)** - Climate and weather data for renewable energy correlation analysis
 
+## Data Ingestion Strategy
+
+**Hybrid Approach:**
+- **Python Custom Scripts** (ENTSO-E API)
+  - When: No native connector available
+  - Why: Maximum flexibility and control
+  
+- **Airbyte** (Open Power System Data)
+  - When: Native connectors available
+  - Why: Faster setup, built-in monitoring
+
 
 
 ## 📝 Project Status

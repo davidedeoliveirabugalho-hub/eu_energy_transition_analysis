@@ -15,7 +15,60 @@ import pandas as pd
 from entsoe import EntsoePandasClient
 from google.cloud import bigquery
 
-# === Step 2: parse_arguments() function ===
+import re
+
+# === Step 2: Helper Functions ===
+
+def sanitize_column_name(column_name: str) -> str:
+    """
+    Cleans up a column name to make it compatible with BigQuery.
+    
+    Args:
+        column_name: Raw column name (ex: "Actual Generation/MW")
+    
+    Returns:
+        Sanitized column name (ex: "actual_generation_mw")
+    
+    Examples:
+        >>> sanitize_column_name("Actual Generation/MW")
+        'actual_generation_mw'
+        >>> sanitize_column_name("Production.Total")
+        'production_total'
+    """
+    # 1. Convert to lowercase
+    cleaned = column_name.lower()
+    
+    # 2. Replace special characters with underscores
+    #    Keep only: letters (a-z), numbers (0-9), underscores
+    cleaned = re.sub(r'[^a-z0-9_]', '_', cleaned)
+    
+    # 3. Replace multiple underscores with a single one
+    cleaned = re.sub(r'_+', '_', cleaned)
+    
+    # 4. Remove the underscores at the beginning and end
+    cleaned = cleaned.strip('_')
+    
+    return cleaned
+
+def get_table_name(document_type):
+    """
+    Generate table name based on document type.
+    
+    Args:
+        document_type: ENTSO-E document type (e.g., 'A75', 'A73', 'A68')
+    
+    Returns:
+        Table name (e.g., 'bronze_entsoe_a75_actual_generation')
+    """
+    TABLE_NAME_MAPPING = {
+        'A75': 'bronze_entsoe_a75_actual_generation',
+        'A73': 'bronze_entsoe_a73_generation_forecast',
+        'A68': 'bronze_entsoe_a68_installed_capacity'
+    }
+    
+    return TABLE_NAME_MAPPING.get(document_type, f'bronze_entsoe_{document_type.lower()}')
+
+# === Step 3: parse_arguments() function ===
 
 def parse_arguments():
     """
@@ -52,7 +105,7 @@ def parse_arguments():
     
     return start_date, end_date
 
-# === Step 3: load_configuration() function ===
+# === Step 4: load_configuration() function ===
 
 def load_configuration():
     """Load configuration from .env and config.yaml"""
@@ -64,7 +117,6 @@ def load_configuration():
     api_key = os.getenv("ENTSOE_API_KEY")
     project_id = os.getenv("GCP_PROJECT_ID")
     dataset = os.getenv("BIGQUERY_DATASET")
-    table = os.getenv("BIGQUERY_TABLE")
     
     # 1.3 Load config.yaml
     with open('config.yaml') as f:
@@ -76,12 +128,11 @@ def load_configuration():
         "api_key": api_key,
         "project_id": project_id,
         "dataset": dataset,
-        "table": table,
         "countries": countries,
         "documents": documents
     }
 
-# === Step 4: initialize_entsoe_client() function ===
+# === Step 5: initialize_entsoe_client() function ===
 
 def initialize_entsoe_client(api_key):
     """Initialize ENTSO-E client with API key"""
@@ -91,7 +142,7 @@ def initialize_entsoe_client(api_key):
 
     return client
 
-# === Step 5: fetch_data() function ===
+# === Step 6: fetch_data() function ===
 
 def fetch_data(client, country_code, document_type, start_date, end_date):
     """
@@ -141,9 +192,9 @@ def fetch_data(client, country_code, document_type, start_date, end_date):
         print(f"❌ Error fetching data: {e}")
         return None
     
-# === Step 6: load_to_bigquery() function ===
+# === Step 7: load_to_bigquery() function ===
 
-def load_to_bigquery(df, project_id, dataset, table):
+def load_to_bigquery(df, project_id, dataset, table, country_code, document_type):
     """
     Load DataFrame to BigQuery bronze layer.
     
@@ -152,33 +203,43 @@ def load_to_bigquery(df, project_id, dataset, table):
         project_id: GCP project ID
         dataset: BigQuery dataset name
         table: BigQuery table name
+        country_code: ISO country code (e.g., 'FR')
+        document_type: ENTSO-E document type (e.g., 'A75')
     
     Returns:
         bool: True if successful, False otherwise
     """
     
+    # 0. Check if DataFrame is valid
     if df is None or df.empty:
         print("⚠️  No data to load")
         return False
     
-    # ====== NOUVELLE SECTION : Préparer le DataFrame ======
-    # Reset index to convert it to columns
+    # 1. Prepare DataFrame for BigQuery compatibility
+    # 1.1 Reset index to convert it to columns
     df_prepared = df.reset_index()
     
-    # Flatten column names if they are tuples
+    # 1.2 Flatten column names if they are MultiIndex (tuples)
     if isinstance(df_prepared.columns, pd.MultiIndex):
         df_prepared.columns = ['_'.join(map(str, col)).strip() for col in df_prepared.columns]
     
-    # Convert all column names to strings
+    # 1.3 Convert all column names to strings
     df_prepared.columns = df_prepared.columns.astype(str)
-    # ======================================================
+
+    # 1.4 Sanitize column names for BigQuery compatibility
+    df_prepared.columns = [sanitize_column_name(col) for col in df_prepared.columns]
     
-    # 1. Construct full table ID
+    # 1.5 Add metadata columns
+    df_prepared['country_code'] = country_code
+    df_prepared['document_type'] = document_type
+    df_prepared['ingestion_timestamp'] = datetime.now()
+    
+    # 2. Construct full table ID
     table_id = f"{project_id}.{dataset}.{table}"
     
     print(f"📤 Loading {len(df_prepared)} rows to {table_id}...")
     
-    # 2. Create BigQuery client with credentials
+    # 3. Create BigQuery client with credentials
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     if credentials_path and os.path.exists(credentials_path):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
@@ -188,14 +249,15 @@ def load_to_bigquery(df, project_id, dataset, table):
 
     client = bigquery.Client(project=project_id)
     
-    # 3. Configure the load job
+    # 4. Configure the load job
     job_config = bigquery.LoadJobConfig(
-        write_disposition="WRITE_APPEND",
-        autodetect=True,
-        create_disposition="CREATE_IF_NEEDED"
-    )
+    write_disposition="WRITE_APPEND",
+    autodetect=True,
+    create_disposition="CREATE_IF_NEEDED",
+    schema_update_options=["ALLOW_FIELD_ADDITION"]  # ← Permet l'ajout de nouvelles colonnes
+)
     
-    # 4. Load the DataFrame
+    # 5. Load the DataFrame
     try:
         job = client.load_table_from_dataframe(
             df_prepared, table_id, job_config=job_config  # ← Utilise df_prepared
@@ -209,7 +271,7 @@ def load_to_bigquery(df, project_id, dataset, table):
         print(f"❌ Error loading to BigQuery: {e}")
         return False
     
-# === Step 7: main() function ===
+# === Step 8: main() function ===
 
 def main():
     """Main pipeline orchestration"""
@@ -241,13 +303,24 @@ def main():
             
             # Load to BigQuery if data retrieved successfully
             if df is not None:
-                load_to_bigquery(df, config['project_id'], config['dataset'], config['table'])
+                # Generate table name dynamically
+                table_name = get_table_name(document_type)
+                
+                # Load with metadata
+                load_to_bigquery(
+                    df, 
+                    config['project_id'], 
+                    config['dataset'], 
+                    table_name,          # ← Table dynamique
+                    country_code,        # ← Nouveau paramètre
+                    document_type        # ← Nouveau paramètre
+                )
     
     print("=" * 60)
     print("✅ Pipeline completed!")
     print("=" * 60)
 
-# === Step 8: entrance point ===
+# === Step 9: entrance point ===
 
 if __name__ == "__main__":
     main()
