@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw data ingested from ENTSO-E API via Python script"
+    database: eu-energy-transition
+    schema: analytics_bronze
+    tables:
+      - name: bronze_entsoe_a75_actual_generation
+        description: "Actual generation per production type (hourly data)"
+      
+      - name: bronze_entsoe_a73_generation_forecast
+        description: "Generation forecast per production unit"
+      
+      - name: bronze_entsoe_a68_installed_capacity
+        description: "Installed capacity per production type"
