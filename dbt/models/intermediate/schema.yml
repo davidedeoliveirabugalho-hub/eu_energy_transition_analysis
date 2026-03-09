@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: int_generation_daily
+    description: |
+      Daily aggregated generation data by country and energy type.
+      Transforms hourly MW values into daily MWh totals.
+      
+      Business logic: sum(MW) across 24 hours = MWh for the day
+      Example: 100 MW × 24 hours = 2400 MWh
+    columns:
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+        tests:
+          - not_null
+      
+      - name: generation_date
+        description: "Date of generation (daily granularity)"
+        tests:
+          - not_null
+      
+      - name: biomass_mwh
+        description: "Total daily biomass generation in megawatt-hours"
+      
+      - name: solar_mwh
+        description: "Total daily solar generation in megawatt-hours"
+      
+      - name: wind_onshore_mwh
+        description: "Total daily onshore wind generation in megawatt-hours"
+      
+      - name: wind_offshore_mwh
+        description: "Total daily offshore wind generation in megawatt-hours"
+      
+      - name: nuclear_mwh
+        description: "Total daily nuclear generation in megawatt-hours"
+      
+      - name: gas_mwh
+        description: "Total daily natural gas generation in megawatt-hours"
+      
+      - name: hourly_records_count
+        description: "Number of hourly records aggregated (should be ~24 per day)"

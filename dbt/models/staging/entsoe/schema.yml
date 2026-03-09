@@ -1,0 +1,55 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw ENTSO-E energy data ingested via Python pipeline"
+    schema: analytics_bronze
+    tables:
+      - name: bronze_entsoe_a75_actual_generation
+        description: "Hourly actual generation data by country and energy type (Document Type A75)"
+      
+      - name: bronze_entsoe_a73_generation_forecast
+        description: "Generation forecast data by individual power plants (Document Type A73)"
+      
+      - name: bronze_entsoe_a68_installed_capacity
+        description: "Installed generation capacity snapshots by country and energy type (Document Type A68)"
+
+models:
+  - name: stg_entsoe__generation
+    description: "Cleaned and standardized hourly actual generation data"
+    columns:
+      - name: generation_datetime
+        description: "Timestamp of generation measurement (hourly)"
+      
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+      
+      - name: solar_mw
+        description: "Solar power generation in megawatts"
+      
+      - name: wind_onshore_mw
+        description: "Onshore wind power generation in megawatts"
+      
+      - name: wind_offshore_mw
+        description: "Offshore wind power generation in megawatts"
+
+  - name: stg_entsoe__forecast
+    description: "Generation forecast data with plant-level granularity"
+    columns:
+      - name: forecast_datetime
+        description: "Timestamp of forecast (hourly)"
+      
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+
+  - name: stg_entsoe__capacity
+    description: "Installed generation capacity snapshots"
+    columns:
+      - name: capacity_date
+        description: "Date of capacity snapshot"
+      
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+      
+      - name: solar_capacity_mw
+        description: "Total installed solar capacity in megawatts"

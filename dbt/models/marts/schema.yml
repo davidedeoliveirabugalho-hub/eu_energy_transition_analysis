@@ -2,10 +2,12 @@ version: 2
 
 models:
   - name: dim_countries
-    description: "Dimension table containing country reference data"
+    description: |
+      Dimension table containing country reference data.
+      Provides mapping between country codes and full names for dashboard displays.
     columns:
       - name: country_code
-        description: "ISO 3166-1 alpha-2 country code"
+        description: "ISO 3166-1 alpha-2 country code (primary key)"
         tests:
           - unique
           - not_null
@@ -18,7 +20,17 @@ models:
           - not_null
 
   - name: fct_energy_mix
-    description: "Daily energy mix by country with renewable/fossil/nuclear percentages"
+    description: |
+      Daily energy mix analysis by country.
+      Calculates percentages of renewable, fossil, nuclear, and other energy sources.
+      
+      Key metrics:
+      - renewable_percentage: Solar, wind, hydro, biomass, geothermal, marine
+      - fossil_percentage: Gas, coal, oil, peat
+      - nuclear_percentage: Nuclear generation
+      - other_percentage: Waste, energy storage, other
+      
+      Division by zero protection: Returns NULL if total_production_mwh = 0
     columns:
       - name: country_code
         description: "ISO 3166-1 alpha-2 country code"
@@ -29,14 +41,75 @@ models:
               field: country_code
       
       - name: generation_date
-        description: "Date of generation"
+        description: "Date of generation (daily granularity)"
         tests:
           - not_null
       
+      - name: total_renewable_mwh
+        description: "Total daily renewable energy generation (sum of solar, wind, hydro, biomass, etc.)"
+      
+      - name: total_fossil_mwh
+        description: "Total daily fossil fuel generation (sum of gas, coal, oil, peat)"
+      
+      - name: total_nuclear_mwh
+        description: "Total daily nuclear generation"
+      
+      - name: total_other_mwh
+        description: "Total daily other sources (waste, energy storage)"
+      
       - name: total_production_mwh
-        description: "Total daily production in MWh"
+        description: "Total daily energy production across all sources"
         tests:
           - not_null
       
       - name: renewable_percentage
-        description: "Percentage of renewable energy (0-100)"
+        description: "Renewable energy as percentage of total production (0-100, NULL if no production)"
+      
+      - name: fossil_percentage
+        description: "Fossil fuel as percentage of total production (0-100, NULL if no production)"
+      
+      - name: nuclear_percentage
+        description: "Nuclear as percentage of total production (0-100, NULL if no production)"
+      
+      - name: other_percentage
+        description: "Other sources as percentage of total production (0-100, NULL if no production)"
+
+  - name: fct_renewable_capacity
+    description: |
+      Installed generation capacity analysis by country.
+      Calculates percentages of renewable, fossil, nuclear capacity.
+      
+      Use cases:
+      - Compare renewable vs fossil capacity by country
+      - Identify countries with highest renewable infrastructure
+      - Compare installed capacity (MW) vs actual production (MWh from fct_energy_mix)
+    columns:
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_countries')
+              field: country_code
+      
+      - name: capacity_date
+        description: "Date of capacity snapshot"
+        tests:
+          - not_null
+      
+      - name: total_renewable_capacity_mw
+        description: "Total installed renewable capacity in megawatts"
+      
+      - name: total_fossil_capacity_mw
+        description: "Total installed fossil capacity in megawatts"
+      
+      - name: total_nuclear_capacity_mw
+        description: "Total installed nuclear capacity in megawatts"
+      
+      - name: total_installed_capacity_mw
+        description: "Total installed capacity across all sources"
+        tests:
+          - not_null
+      
+      - name: renewable_capacity_percentage
+        description: "Renewable capacity as percentage of total installed capacity (0-100)"
