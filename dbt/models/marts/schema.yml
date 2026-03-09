@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: dim_countries
+    description: "Dimension table containing country reference data"
+    columns:
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+        tests:
+          - unique
+          - not_null
+          - accepted_values:
+              values: ['AT', 'BE', 'DE', 'ES', 'FR', 'IT', 'NL', 'PT', 'UK']
+      
+      - name: country_name
+        description: "Full country name in English"
+        tests:
+          - not_null
+
+  - name: fct_energy_mix
+    description: "Daily energy mix by country with renewable/fossil/nuclear percentages"
+    columns:
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_countries')
+              field: country_code
+      
+      - name: generation_date
+        description: "Date of generation"
+        tests:
+          - not_null
+      
+      - name: total_production_mwh
+        description: "Total daily production in MWh"
+        tests:
+          - not_null
+      
+      - name: renewable_percentage
+        description: "Percentage of renewable energy (0-100)"
