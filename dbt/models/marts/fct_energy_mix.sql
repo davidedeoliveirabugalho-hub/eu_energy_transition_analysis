@@ -1,9 +1,3 @@
-{{
-    config(
-        materialized='table',
-        schema='gold'
-    )
-}}
 
 with daily_generation as (
     

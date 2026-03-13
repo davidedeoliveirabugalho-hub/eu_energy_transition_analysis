@@ -1,9 +1,4 @@
-{{
-    config(
-        materialized='table',
-        schema='gold'
-    )
-}}
+
 
 with capacity_data as (
     

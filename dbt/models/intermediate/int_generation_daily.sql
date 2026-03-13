@@ -1,9 +1,4 @@
-{{
-    config(
-        materialized='table',
-        schema='silver'
-    )
-}}
+
 
 with generation_data as (
     

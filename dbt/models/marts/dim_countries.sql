@@ -1,9 +1,3 @@
-{{
-    config(
-        materialized='table',
-        schema='gold'
-    )
-}}
 
 with countries_list as (
     
