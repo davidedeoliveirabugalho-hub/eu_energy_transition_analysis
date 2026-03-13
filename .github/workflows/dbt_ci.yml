@@ -70,7 +70,7 @@ jobs:
           cat > ~/.dbt/profiles.yml << 'EOF'
           eu_energy_transition:
             outputs:
-              dev:
+              default:
                 type: bigquery
                 method: service-account
                 project: eu-energy-transition
