@@ -2,34 +2,87 @@
 
 ## 📖 Description
 
-This project analyzes the European energy transition from 2015 to 2024, exploring how countries have evolved their electricity mix toward renewable sources and the factors influencing this transformation.
+This project analyzes the European energy transition, exploring how countries have evolved their electricity mix toward renewable sources. It covers **8 European countries** with **9 months of historical data** (June 2025 - March 2026), representing nearly **200,000 data points**.
 
 ## 🎯 Objectives
 
-This project aims to answer key questions about Europe's energy transition:
+This project answers key questions about Europe's energy transition:
 
 - **Energy Mix Evolution**: How has the share of renewable vs. fossil fuels changed across European countries?
-- **Consumption Trends**: What are the patterns in electricity consumption by country and over time?
 - **Transition Leaders**: Which countries are leading the renewable energy adoption?
-- **Price Impact**: How do energy prices correlate with the energy mix composition?
+- **Production Patterns**: What are the daily and seasonal patterns in electricity generation?
+- **Country Comparison**: How do different countries compare in their energy transition progress?
 
 ## 🛠️ Tech Stack
 
-- **Data Ingestion**: Airbyte
-- **Data Warehouse**: Google Cloud Platform (BigQuery)
-- **Data Transformation**: dbt (data build tool)
-- **Data Visualization**: Metabase
-- **Version Control**: Git & GitHub
-- **CI/CD**: GitHub Actions
-- **Containerization**: Docker
+| Layer | Technology |
+|-------|------------|
+| **Data Ingestion** | Python custom scripts (ENTSO-E API) |
+| **Data Warehouse** | Google BigQuery (GCP) |
+| **Data Transformation** | dbt (data build tool) |
+| **Data Visualization** | Metabase |
+| **CI/CD** | GitHub Actions |
+| **Version Control** | Git & GitHub |
+| **Containerization** | Docker *(planned)* |
 
 ## 🏗️ Architecture
 
-Coming soon...
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   ENTSO-E API   │────▶│  Python Script  │────▶│    BigQuery     │
+│  (Data Source)  │     │   (Ingestion)   │     │    (Bronze)     │
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                         │
+                        ┌────────────────────────────────┘
+                        ▼
+              ┌─────────────────┐     ┌─────────────────┐
+              │       dbt       │────▶│    BigQuery     │
+              │ (Transform)     │     │  (Silver/Gold)  │
+              └─────────────────┘     └────────┬────────┘
+                                               │
+                        ┌──────────────────────┘
+                        ▼
+              ┌─────────────────┐
+              │    Metabase     │
+              │  (Dashboards)   │
+              └─────────────────┘
+```
 
-## 🏗️ Architecture & Decisions
+### Medallion Architecture
 
-For detailed technical decisions and alternatives explored, see [docs/technical_decisions.md](docs/technical_decisions.md)
+| Layer | Dataset | Description |
+|-------|---------|-------------|
+| **Bronze** | `analytics_bronze` | Raw data from ENTSO-E API |
+| **Silver** | `analytics_silver` | Cleaned & standardized (staging + intermediate) |
+| **Gold** | `analytics_gold` | Business-ready aggregations (marts) |
+
+## 📊 Current State
+
+### Data Coverage
+- **Countries**: 🇫🇷 France, 🇩🇪 Germany, 🇪🇸 Spain, 🇮🇹 Italy, 🇳🇱 Netherlands, 🇵🇹 Portugal, 🇧🇪 Belgium, 🇬🇧 UK
+- **Period**: June 2025 - March 2026 (9 months)
+- **Data Points**: ~198,000 rows
+- **Granularity**: Hourly generation data
+
+### Document Types Ingested
+| Code | Description | Status |
+|------|-------------|--------|
+| A75 | Actual Generation per Type | ✅ All countries |
+| A73 | Generation Forecast | ✅ Available countries |
+| A68 | Installed Capacity | ✅ All countries |
+
+### dbt Models
+- **Staging**: 3 views (stg_entsoe__generation, stg_entsoe__capacity, stg_entsoe__forecast)
+- **Intermediate**: 1 view (int_generation_daily)
+- **Marts**: 3 tables (dim_countries, fct_energy_mix, fct_renewable_capacity)
+- **Tests**: 14 data quality tests (100% passing)
+
+### Dashboards
+Metabase dashboards available with:
+- Energy mix by country (renewable vs fossil vs nuclear)
+- Renewable percentage trends over time
+- Country comparison rankings
+- Installed capacity analysis
 
 ## 🚀 Getting Started
 
@@ -67,55 +120,88 @@ cp .env.example .env
 ```
 
 ### 4. Create BigQuery datasets
-The project uses a medallion architecture with three layers:
 ```bash
-# Create the datasets (requires Google Cloud SDK installed)
+# Using Google Cloud SDK
 bq mk --dataset --location=EU your-project-id:analytics_bronze
 bq mk --dataset --location=EU your-project-id:analytics_silver
 bq mk --dataset --location=EU your-project-id:analytics_gold
 ```
 
-Or create them manually in [BigQuery Console](https://console.cloud.google.com/bigquery).
-
 ### 5. Run data ingestion
 ```bash
-# Ingests last 30 days of ENTSO-E data by default
+# Incremental mode (recommended for daily runs)
+# Automatically detects last ingested date per country
 python scripts/ingest_entsoe_data.py
 
-# Or specify custom date range
-python scripts/ingest_entsoe_data.py --start 2025-01-01 --end 2025-01-31
+# Full backfill from specific date
+python scripts/ingest_entsoe_data.py --start 2025-06-01 --end 2026-03-13
+
+# Prevent Mac sleep during long ingestion
+caffeinate -i python scripts/ingest_entsoe_data.py
 ```
 
 ### 6. Run dbt transformations
 ```bash
 cd dbt
 dbt run
+dbt test
 ```
 
-## 📊 Key Insights
+## 🔄 CI/CD Pipeline
 
-Coming soon...
+GitHub Actions automatically runs on every push to `main`:
+- ✅ dbt compile
+- ✅ dbt test (14 data quality tests)
+
+Badge: Check the Actions tab for pipeline status.
 
 ## 📚 Data Sources
 
-- **[ENTSO-E Transparency Platform](https://transparency.entsoe.eu/)** - European electricity generation and consumption data by source
-- **[Open Power System Data](https://open-power-system-data.org/)** - Historical energy production and consumption datasets
-- **[EEX/EPEX Spot](https://www.epexspot.com/)** - European energy market prices
-- **[ERA5 (Copernicus)](https://cds.climate.copernicus.eu/)** - Climate and weather data for renewable energy correlation analysis
+### Currently Used
+- **[ENTSO-E Transparency Platform](https://transparency.entsoe.eu/)** - European electricity generation data by source (A75, A73, A68 documents)
 
-## Data Ingestion Strategy
+### Roadmap (Future Integration)
+- **[ERA5 (Copernicus)](https://cds.climate.copernicus.eu/)** - Weather data for renewable correlation analysis
+- **[EPEX Spot](https://www.epexspot.com/)** - Energy market prices
+- **Consumption data** - A65 document type from ENTSO-E
 
-**Hybrid Approach:**
-- **Python Custom Scripts** (ENTSO-E API)
-  - When: No native connector available
-  - Why: Maximum flexibility and control
-  
-- **Airbyte** (Open Power System Data)
-  - When: Native connectors available
-  - Why: Faster setup, built-in monitoring
+## 🗺️ Roadmap
 
+### Completed ✅
+- [x] Python ingestion scripts with incremental mode
+- [x] BigQuery medallion architecture (bronze/silver/gold)
+- [x] dbt models with staging, intermediate, and marts layers
+- [x] 14 data quality tests
+- [x] Metabase dashboards
+- [x] GitHub Actions CI/CD
+- [x] 9 months of historical data (8 countries)
 
+### In Progress 🔄
+- [ ] Dashboard refinements (time series readability)
+- [ ] README and documentation updates
+
+### Planned 📋
+- [ ] Docker containerization for easy deployment
+- [ ] Add consumption data (A65 document type)
+- [ ] Weather data correlation (ERA5)
+- [ ] Energy price analysis (EPEX)
+- [ ] Expand to more EU countries
 
 ## 📝 Project Status
 
-🟡 **In Progress** - Currently setting up the data pipeline infrastructure
+🟢 **90% Complete** - Core pipeline operational with CI/CD, ready for portfolio presentation.
+
+## 🏗️ Technical Decisions
+
+For detailed technical decisions and alternatives explored, see [docs/technical_decisions.md](docs/technical_decisions.md)
+
+## 👤 Author
+
+**David Bugalho**
+- Career changer: 15 years operational management → Data Analytics
+- Certifications: DataBird Data Analyst & Analytics Engineer
+- LinkedIn: [Connect with me](https://www.linkedin.com/in/david-de-oliveira-bugalho/)
+
+## 📄 License
+
+This project is for portfolio and educational purposes.
