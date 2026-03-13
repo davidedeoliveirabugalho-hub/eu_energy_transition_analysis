@@ -1,0 +1,103 @@
+# ============================================
+# dbt CI/CD Pipeline for EU Energy Transition Analysis
+# ============================================
+# This workflow automatically tests dbt models on every push to main
+# Ensures data quality by running compile + test before deployment
+# Author: David Bugalho | Date: March 2026
+# ============================================
+
+name: dbt CI/CD
+
+# Trigger conditions - when to run this workflow
+on:
+  push:
+    branches: [main]        # Run on every push to main branch
+  pull_request:
+    branches: [main]        # Run on every Pull Request targeting main
+
+# Jobs to execute
+jobs:
+  dbt-test:
+    runs-on: ubuntu-latest  # Use Ubuntu virtual machine (free tier)
+    
+    steps:
+      # ============================================
+      # STEP 1: Checkout Repository Code
+      # ============================================
+      # Downloads the repository code to the virtual machine
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      # ============================================
+      # STEP 2: Setup Python Environment
+      # ============================================
+      # Installs Python 3.12 (project requirement)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      # ============================================
+      # STEP 3: Install dbt Dependencies
+      # ============================================
+      # Installs dbt-core and BigQuery adapter
+      # Using exact versions from production environment
+      - name: Install dbt
+        run: |
+          pip install dbt-core==1.11.7 dbt-bigquery==1.11.1
+      
+      # ============================================
+      # STEP 4: Setup GCP Service Account Credentials
+      # ============================================
+      # Decodes base64-encoded GCP service account key
+      # Creates temporary keyfile for BigQuery authentication
+      # Secret stored securely in GitHub repository settings
+      - name: Setup GCP credentials
+        run: |
+          echo "$GCP_KEY" | base64 -d > /tmp/gcp-key.json
+        env:
+          GCP_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      
+      # ============================================
+      # STEP 5: Create dbt profiles.yml
+      # ============================================
+      # Generates dbt configuration with BigQuery connection
+      # Uses service account authentication
+      # Points to analytics_silver dataset (default target)
+      - name: Create dbt profiles
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'EOF'
+          eu_energy_transition:
+            outputs:
+              dev:
+                type: bigquery
+                method: service-account
+                project: eu-energy-transition
+                dataset: analytics_silver
+                threads: 4
+                keyfile: /tmp/gcp-key.json
+                location: EU
+          EOF
+      
+      # ============================================
+      # STEP 6: dbt Compile - Validate SQL Syntax
+      # ============================================
+      # Compiles all dbt models to ensure valid SQL
+      # Catches syntax errors before deployment
+      # No data is created or modified at this stage
+      - name: dbt compile
+        run: |
+          cd dbt
+          dbt compile
+      
+      # ============================================
+      # STEP 7: dbt Test - Run Data Quality Tests
+      # ============================================
+      # Executes all 14 dbt tests (unique, not_null, relationships, etc.)
+      # Validates data integrity and business rules
+      # Fails the workflow if any test fails
+      - name: dbt test
+        run: |
+          cd dbt
+          dbt test
