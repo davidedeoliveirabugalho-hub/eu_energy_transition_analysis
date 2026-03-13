@@ -19,10 +19,10 @@ models:
   eu_energy_transition:
     staging:
       +materialized: view
-      +schema: silver
+      +schema: analytics_silver
     intermediate:
       +materialized: view
-      +schema: silver
+      +schema: analytics_silver
     marts:
       +materialized: table
-      +schema: gold
+      +schema: analytics_gold
