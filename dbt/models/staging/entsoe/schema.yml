@@ -14,6 +14,9 @@ sources:
       - name: bronze_entsoe_a68_installed_capacity
         description: "Installed generation capacity snapshots by country and energy type (Document Type A68)"
 
+      - name: bronze_entsoe_a71_installed_capacity_per_unit
+        description: "Installed capacity per production unit (Document Type A71) - detailed plant-level data"
+
 models:
   - name: stg_entsoe__generation
     description: "Cleaned and standardized hourly actual generation data"
@@ -53,3 +56,24 @@ models:
       
       - name: solar_capacity_mw
         description: "Total installed solar capacity in megawatts"
+
+  - name: stg_entsoe__capacity_per_unit
+    description: "Cleaned installed capacity data at production unit level (power plants)"
+    columns:
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country code"
+      
+      - name: unit_id
+        description: "ENTSO-E production unit identifier"
+      
+      - name: unit_name
+        description: "Name of the production unit/power plant"
+      
+      - name: energy_type
+        description: "Human-readable energy type (Solar, Wind Onshore, Nuclear, etc.)"
+      
+      - name: is_renewable
+        description: "Boolean flag indicating if energy source is renewable"
+      
+      - name: installed_capacity_mw
+        description: "Installed capacity in megawatts"

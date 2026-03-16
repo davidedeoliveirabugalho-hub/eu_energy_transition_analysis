@@ -1,16 +1,8 @@
-
-
-with capacity_data as (
-    
-    select * from {{ ref('stg_entsoe__capacity') }}
-
-),
-
-capacity_totals as (
-
+with a68_data as (
+    -- Portugal depuis A68 (seul pays avec données agrégées)
     select
         country_code,
-        capacity_date,
+        DATE(capacity_date) as capacity_date,
         
         -- Total renewable capacity (MW)
         (
@@ -47,8 +39,54 @@ capacity_totals as (
             coalesce(energy_storage_capacity_mw, 0)
         ) as total_other_capacity_mw
 
-    from capacity_data
+    from {{ ref('stg_entsoe__capacity') }}
+    where country_code NOT IN ('FR', 'UK', 'IT', 'NL', 'BE', 'AT', 'ES', 'DE')
+    qualify ROW_NUMBER() OVER (PARTITION BY country_code ORDER BY capacity_date DESC) = 1
 
+),
+
+a71_data as (
+    -- 7 autres pays depuis A71 (agrégé par catégorie)
+    select
+        country_code,
+        MAX(DATE(TIMESTAMP(latest_period_start))) as capacity_date,
+        
+        -- Total renewable capacity (MW) - using is_renewable flag
+        SUM(CASE WHEN is_renewable THEN total_capacity_mw ELSE 0 END) as total_renewable_capacity_mw,
+        
+        -- Total fossil capacity (MW)
+        SUM(CASE WHEN energy_type LIKE 'Fossil%' THEN total_capacity_mw ELSE 0 END) as total_fossil_capacity_mw,
+        
+        -- Total nuclear capacity (MW)
+        SUM(CASE WHEN energy_type = 'Nuclear' THEN total_capacity_mw ELSE 0 END) as total_nuclear_capacity_mw,
+        
+        -- Total other capacity (MW)
+        SUM(CASE 
+            WHEN NOT is_renewable 
+                AND energy_type != 'Nuclear' 
+                AND energy_type NOT LIKE 'Fossil%' 
+            THEN total_capacity_mw 
+            ELSE 0 
+        END) as total_other_capacity_mw
+
+    from {{ ref('fct_capacity_per_unit') }}
+    
+    -- Filters:
+    -- 1. Exclude PT: A68 has more complete data for Portugal (21k MW vs 10k MW in A71)
+    --    TODO: If A71 data for PT improves, compare totals and use the better source
+    -- 2. Only include countries present in dim_countries (built from A75 generation data)
+    --    This ensures consistency across all dashboard tabs
+    where country_code != 'PT'  -- PT is more complete in A68
+        AND country_code IN (SELECT country_code FROM {{ ref('dim_countries') }})
+    group by country_code
+
+),
+
+combined as (
+    -- Union A68 (Portugal) + A71 (7 autres pays)
+    select * from a68_data
+    union all
+    select * from a71_data
 ),
 
 capacity_mix as (
@@ -96,7 +134,7 @@ capacity_mix as (
             ELSE round((total_other_capacity_mw / (total_renewable_capacity_mw + total_fossil_capacity_mw + total_nuclear_capacity_mw + total_other_capacity_mw)) * 100, 2)
         END as other_capacity_percentage
 
-    from capacity_totals
+    from combined
 
 )
 
