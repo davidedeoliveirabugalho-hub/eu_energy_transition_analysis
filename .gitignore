@@ -173,4 +173,5 @@ htmlcov/
 
 # === DOCUMENTATION GÉNÉRÉE ===
 site/
-docs/_build/
+docs/_build/.DS_Store
+dbt/dbt_internal_packages/
