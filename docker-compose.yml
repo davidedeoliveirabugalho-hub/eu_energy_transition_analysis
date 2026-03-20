@@ -1,0 +1,59 @@
+# EU Energy Transition Analysis - Docker Compose
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eu-energy-app
+    env_file:
+      - .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json
+      - DBT_PROFILES_DIR=/app/dbt
+    volumes:
+      - ${GCP_KEY_PATH:-~/.gcp/eu-energy-transition-key.json}:/secrets/gcp-key.json:ro
+      - ./dbt/profiles.yml:/app/dbt/profiles.yml:ro
+    working_dir: /app
+
+  ingest:
+    extends:
+      service: app
+    container_name: eu-energy-ingest
+    command: python scripts/ingest_entsoe_data.py
+
+  ingest-a71:
+    extends:
+      service: app
+    container_name: eu-energy-ingest-a71
+    command: python scripts/ingest_entsoe_a71.py
+
+  dbt:
+    extends:
+      service: app
+    container_name: eu-energy-dbt
+    command: dbt run --profiles-dir /app/dbt --project-dir /app/dbt
+
+  dbt-test:
+    extends:
+      service: app
+    container_name: eu-energy-dbt-test
+    command: dbt test --profiles-dir /app/dbt --project-dir /app/dbt
+
+  pipeline:
+    extends:
+      service: app
+    container_name: eu-energy-pipeline
+    command: >
+      sh -c "
+        echo '🚀 Starting EU Energy Pipeline...' &&
+        echo '📥 Step 1: Ingesting A75/A73/A68 data...' &&
+        python scripts/ingest_entsoe_data.py &&
+        echo '📥 Step 2: Ingesting A71 data...' &&
+        python scripts/ingest_entsoe_a71.py &&
+        echo '🔄 Step 3: Running dbt transformations...' &&
+        dbt run --profiles-dir /app/dbt --project-dir /app/dbt &&
+        echo '✅ Step 4: Running dbt tests...' &&
+        dbt test --profiles-dir /app/dbt --project-dir /app/dbt &&
+        echo '🎉 Pipeline completed successfully!'
+      "
