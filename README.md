@@ -84,6 +84,33 @@ Metabase dashboards available with:
 - Country comparison rankings
 - Installed capacity analysis
 
+## 📊 Dashboard Screenshots
+
+<details>
+<summary>📈 Click to view dashboard screenshots</summary>
+
+### Tab 1: Overview
+EU-level energy production metrics with renewable/fossil/nuclear breakdown.
+
+![Overview](docs/screenshots/tab1-overview.png)
+
+### Tab 2: Renewable Energy Analysis
+Deep dive into renewable energy sources across countries.
+
+![Renewable Analysis](docs/screenshots/tab2-renewable.png)
+
+### Tab 3: Country Deep Dive
+Interactive country-specific analysis with dynamic filtering.
+
+![Country Deep Dive](docs/screenshots/tab3-country.png)
+
+### Tab 4: Capacity Analysis
+Installed capacity analysis by country and energy type.
+
+![Capacity Analysis](docs/screenshots/tab4-capacity.png)
+
+</details>
+
 ## 🚀 Getting Started
 
 ### Prerequisites
