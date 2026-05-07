@@ -12,8 +12,8 @@ models:
           - unique
           - not_null
           - accepted_values:
-              values: ['AT', 'BE', 'DE', 'ES', 'FR', 'IT', 'NL', 'PT', 'UK']
-      
+              arguments:
+                values: ['AT', 'BE', 'DE', 'ES', 'FR', 'IT', 'NL', 'PT', 'UK']
       - name: country_name
         description: "Full country name in English"
         tests:
@@ -23,13 +23,13 @@ models:
     description: |
       Daily energy mix analysis by country.
       Calculates percentages of renewable, fossil, nuclear, and other energy sources.
-      
+
       Key metrics:
       - renewable_percentage: Solar, wind, hydro, biomass, geothermal, marine
       - fossil_percentage: Gas, coal, oil, peat
       - nuclear_percentage: Nuclear generation
       - other_percentage: Waste, energy storage, other
-      
+
       Division by zero protection: Returns NULL if total_production_mwh = 0
     columns:
       - name: country_code
@@ -37,40 +37,33 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_countries')
-              field: country_code
-      
+              arguments:
+                to: ref('dim_countries')
+                field: country_code
       - name: generation_date
         description: "Date of generation (daily granularity)"
         tests:
           - not_null
-      
+
       - name: total_renewable_mwh
         description: "Total daily renewable energy generation (sum of solar, wind, hydro, biomass, etc.)"
-      
       - name: total_fossil_mwh
         description: "Total daily fossil fuel generation (sum of gas, coal, oil, peat)"
-      
       - name: total_nuclear_mwh
         description: "Total daily nuclear generation"
-      
       - name: total_other_mwh
         description: "Total daily other sources (waste, energy storage)"
-      
       - name: total_production_mwh
         description: "Total daily energy production across all sources"
         tests:
           - not_null
-      
+
       - name: renewable_percentage
         description: "Renewable energy as percentage of total production (0-100, NULL if no production)"
-      
       - name: fossil_percentage
         description: "Fossil fuel as percentage of total production (0-100, NULL if no production)"
-      
       - name: nuclear_percentage
         description: "Nuclear as percentage of total production (0-100, NULL if no production)"
-      
       - name: other_percentage
         description: "Other sources as percentage of total production (0-100, NULL if no production)"
 
@@ -78,7 +71,7 @@ models:
     description: |
       Installed generation capacity analysis by country.
       Calculates percentages of renewable, fossil, nuclear capacity.
-      
+
       Use cases:
       - Compare renewable vs fossil capacity by country
       - Identify countries with highest renewable infrastructure
@@ -89,27 +82,24 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_countries')
-              field: country_code
-      
+              arguments:
+                to: ref('dim_countries')
+                field: country_code
       - name: capacity_date
         description: "Date of capacity snapshot"
         tests:
           - not_null
-      
+
       - name: total_renewable_capacity_mw
         description: "Total installed renewable capacity in megawatts"
-      
       - name: total_fossil_capacity_mw
         description: "Total installed fossil capacity in megawatts"
-      
       - name: total_nuclear_capacity_mw
         description: "Total installed nuclear capacity in megawatts"
-      
       - name: total_installed_capacity_mw
         description: "Total installed capacity across all sources"
         tests:
           - not_null
-      
+
       - name: renewable_capacity_percentage
         description: "Renewable capacity as percentage of total installed capacity (0-100)"

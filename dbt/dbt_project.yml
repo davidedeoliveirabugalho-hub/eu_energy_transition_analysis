@@ -9,14 +9,13 @@ analysis-paths: ["analyses"]
 test-paths: ["tests"]
 seed-paths: ["seeds"]
 macro-paths: ["macros"]
-
-target-path: "target"
 clean-targets:
   - "target"
   - "dbt_packages"
 
 models:
   eu_energy_transition:
+    +static_analysis: strict
     staging:
       +materialized: view
       +schema: analytics_silver
@@ -26,3 +25,5 @@ models:
     marts:
       +materialized: table
       +schema: analytics_gold
+flags:
+  require_generic_test_arguments_property: true
